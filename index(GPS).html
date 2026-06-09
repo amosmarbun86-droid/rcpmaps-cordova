@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RcpMaps - Fake GPS</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: #f4f6f9; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        h2 { color: #333; margin-bottom: 15px; }
+        .container { width: 100%; max-width: 500px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+        input[type="text"] { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; text-align: center; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; justify-content: center; }
+        button { flex: 1; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .btn-search { background: #2196F3; color: white; width: 100%; margin-bottom: 15px; }
+        .btn-start { background: #4CAF50; color: white; }
+        .btn-stop { background: #F44336; color: white; }
+        button:active { opacity: 0.8; }
+        #map { width: 100%; height: 300px; margin-top: 15px; border-radius: 8px; border: 1px solid #ddd; }
+        .status { margin-top: 10px; font-size: 14px; color: #666; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>RcpMaps</h2>
+    
+    <input type="text" id="search-input" placeholder="Ketik nama tempat/lokasi...">
+    <button class="btn-search" onclick="cariTempat()">CARI TEMPAT</button>
+    
+    <input type="text" id="latitude" placeholder="Latitude">
+    <input type="text" id="longitude" placeholder="Longitude">
+    
+    <div class="btn-group">
+        <button class="btn-start" onclick="startFakeGPS()">START FAKE GPS</button>
+        <button class="btn-stop" onclick="stopFakeGPS()">STOP</button>
+    </div>
+    
+    <div class="status" id="status-text">Status: GPS Asli (Mati)</div>
+    <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    let map, marker;
+    let isMocking = false;
+    let mockLat = 0;
+    let mockLng = 0;
+
+    function initMap() {
+        map = L.map('map').setView([-6.2088, 106.8456], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+        marker = L.marker([-6.2088, 106.8456]).addTo(map);
+    }
+    window.onload = initMap;
+
+    async function cariTempat() {
+        const query = document.getElementById('search-input').value;
+        if (!query) return alert('Ketik nama tempat dulu, Amos!');
+        
+        document.getElementById('status-text').innerText = "Mencari lokasi...";
+        
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            
+            if (data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lon = parseFloat(data[0].lon);
+                
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lon;
+                
+                map.setView([lat, lon], 15);
+                marker.setLatLng([lat, lon]);
+                document.getElementById('status-text').innerText = "Lokasi ditemukan!";
+            } else {
+                alert('Tempat tidak ditemukan, coba nama lain!');
+                document.getElementById('status-text').innerText = "Gagal menemukan lokasi.";
+            }
+        } catch (error) {
+            console.error(error);
+            document.getElementById('status-text').innerText = "Error koneksi pencarian.";
+        }
+    }
+
+    const originalGetCurrentPosition = navigator.geolocation.getCurrentPosition;
+    const originalWatchPosition = navigator.geolocation.watchPosition;
+
+    function startFakeGPS() {
+        const latInput = document.getElementById('latitude').value;
+        const lngInput = document.getElementById('longitude').value;
+        
+        if (!latInput || !lngInput) {
+            alert('Isi koordinat dulu!');
+            return;
+        }
+
+        mockLat = parseFloat(latInput);
+        mockLng = parseFloat(lngInput);
+        isMocking = true;
+
+        navigator.geolocation.getCurrentPosition = function(success, error, options) {
+            if (isMocking) {
+                success({
+                    coords: {
+                        latitude: mockLat,
+                        longitude: mockLng,
+                        accuracy: 10,
+                        altitude: null,
+                        altitudeAccuracy: null,
+                        heading: null,
+                        speed: null
+                    },
+                    timestamp: Date.now()
+                });
+            } else {
+                originalGetCurrentPosition.apply(navigator.geolocation, arguments);
+            }
+        };
+
+        navigator.geolocation.watchPosition = function(success, error, options) {
+            if (isMocking) {
+                success({
+                    coords: { latitude: mockLat, longitude: mockLng, accuracy: 10 },
+                    timestamp: Date.now()
+                });
+                return 999;
+            } else {
+                return originalWatchPosition.apply(navigator.geolocation, arguments);
+            }
+        };
+
+        map.setView([mockLat, mockLng], 15);
+        marker.setLatLng([mockLat, mockLng]);
+        document.getElementById('status-text').style.color = "#4CAF50";
+        document.getElementById('status-text').innerText = "Status: FAKE GPS AKTIF!";
+        alert("Fake GPS aktif di sistem web browser!");
+    }
+
+    function stopFakeGPS() {
+        isMocking = false;
+        navigator.geolocation.getCurrentPosition = originalGetCurrentPosition;
+        navigator.geolocation.watchPosition = originalWatchPosition;
+        
+        document.getElementById('status-text').style.color = "#666";
+        document.getElementById('status-text').innerText = "Status: GPS Asli (Mati)";
+        alert("Fake GPS dinonaktifkan.");
+    }
+</script>
+</body>
+</html>
