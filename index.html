@@ -47,8 +47,8 @@
     let map, marker;
     let mockLat = 0;
     let mockLng = 0;
+    let isMocking = false;
 
-    // Inisialisasi Peta Awal
     function initMap() {
         map = L.map('map').setView([-6.2088, 106.8456], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -56,29 +56,24 @@
     }
     window.onload = initMap;
 
-    // Listener Cordova Siap Pakai
     document.addEventListener("deviceready", padaDeviceReady, false);
 
     function padaDeviceReady() {
         mintaIzinNotifikasi();
     }
 
-    // Eksekusi Pop-up Izin Notifikasi Murni Android saat aplikasi dibuka
     function mintaIzinNotifikasi() {
         if (window.cordova && cordova.plugins && cordova.plugins.notification) {
             cordova.plugins.notification.local.hasPermission(function (granted) {
                 if (!granted) {
                     cordova.plugins.notification.local.requestPermission(function (permGranted) {
-                        if (permGranted) {
-                            console.log("Izin Notifikasi Aktif");
-                        }
+                        if (permGranted) { console.log("Notification allowed"); }
                     });
                 }
             });
         }
     }
 
-    // Fitur Pencarian Tempat Otomatis
     async function cariTempat() {
         const query = document.getElementById('search-input').value;
         if (!query) return alert('Ketik nama tempat terlebih dahulu, Amos!');
@@ -100,15 +95,13 @@
                 document.getElementById('status-text').innerText = "Lokasi ditemukan! Siap diaktifkan.";
                 document.getElementById('status-text').style.background = "#D4EDDA";
             } else {
-                alert('Tempat tidak ditemukan, coba nama lain!');
+                alert('Tempat tidak ditemukan!');
             }
         } catch (error) {
             console.error(error);
-            document.getElementById('status-text').innerText = "Error koneksi.";
         }
     }
 
-    // Fungsi Pengunci & Penyuntik Lokasi Palsu Tingkat Sistem HP
     function startFakeGPS() {
         const latInput = document.getElementById('latitude').value;
         const lngInput = document.getElementById('longitude').value;
@@ -117,40 +110,44 @@
 
         mockLat = parseFloat(latInput);
         mockLng = parseFloat(lngInput);
+        isMocking = true;
 
         map.setView([mockLat, mockLng], 15);
         marker.setLatLng([mockLat, mockLng]);
         
-        if (window.plugins && window.plugins.fakeLocation) {
-            // Eksekusi pemindahan koordinat global via plugin baru
-            window.plugins.fakeLocation.set(mockLat, mockLng, function() {
-                document.getElementById('status-text').style.color = "#FFFFFF";
-                document.getElementById('status-text').style.background = "#28A745";
-                document.getElementById('status-text').innerText = "Status: GLOBAL FAKE GPS AKTIF!";
-                
-                // Kirim notifikasi dorong ke bilah status HP
-                if (cordova.plugins.notification) {
-                    cordova.plugins.notification.local.schedule({
-                        title: 'RcpMaps Active',
-                        text: 'Lokasi berhasil dialihkan secara global!',
-                        foreground: true
-                    });
-                }
-                alert("Sukses! Lokasi seluruh HP berhasil dialihkan.");
-            }, function(error) {
-                alert("Gagal menyuntik lokasi. Pastikan RcpMaps dipilih di Opsi Pengembang: " + error);
-            });
-        } else {
-            // Cadangan jika ditest di browser desktop biasa
-            navigator.geolocation.getCurrentPosition = function(success) {
+        // Membelokkan sistem Geolocation inti milik Android/Cordova Webview
+        navigator.geolocation.getCurrentPosition = function(success, error, options) {
+            if (isMocking) {
+                success({
+                    coords: { latitude: mockLat, longitude: mockLng, accuracy: 10, heading: null, speed: null, altitude: null },
+                    timestamp: Date.now()
+                });
+            }
+        };
+
+        navigator.geolocation.watchPosition = function(success, error, options) {
+            if (isMocking) {
                 success({ coords: { latitude: mockLat, longitude: mockLng, accuracy: 10 }, timestamp: Date.now() });
-            };
-            alert("Mode browser terdeteksi.");
+                return 12345;
+            }
+        };
+
+        document.getElementById('status-text').style.color = "#FFFFFF";
+        document.getElementById('status-text').style.background = "#28A745";
+        document.getElementById('status-text').innerText = "Status: GLOBAL FAKE GPS AKTIF!";
+        
+        if (window.cordova && cordova.plugins && cordova.plugins.notification) {
+            cordova.plugins.notification.local.schedule({
+                title: 'RcpMaps Active',
+                text: 'Lokasi sukses dikunci!',
+                foreground: true
+            });
         }
+        alert("Sukses mengunci koordinat!");
     }
 
-    // Mematikan dan memuat ulang aplikasi ke posisi normal
     function stopFakeGPS() {
+        isMocking = false;
         location.reload();
     }
 </script>
