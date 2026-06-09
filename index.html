@@ -97,7 +97,7 @@
         map.setView([mockLat, mockLng], 15);
         marker.setLatLng([mockLat, mockLng]);
         
-        // Membelokkan API Geolocation internal WebView
+        // Membelokkan API lokasi internal WebView secara murni tanpa plugin luar
         navigator.geolocation.getCurrentPosition = function(success) {
             if (isMocking) {
                 success({
@@ -117,17 +117,7 @@
         document.getElementById('status-text').style.background = "#28A745";
         document.getElementById('status-text').innerText = "Status: GLOBAL FAKE GPS AKTIF!";
         
-        // Memunculkan Notifikasi Alert Sistem Android bawaan yang stabil
-        if (navigator.notification && navigator.notification.alert) {
-            navigator.notification.alert(
-                'Koordinat sukses dikunci ke sistem RcpMaps!',
-                function() {},
-                'RcpMaps Active',
-                'OK'
-            );
-        } else {
-            alert("Fake GPS aktif di sistem aplikasi!");
-        }
+        alert("Koordinat berhasil dikunci ke sistem RcpMaps!");
     }
 
     function stopFakeGPS() {
