@@ -12,12 +12,18 @@
         <preference name="AndroidXEnabled" value="true" />
         
         <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION" xmlns:tools="http://schemas.annotation.com/tools" tools:ignore="MockLocation" />
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-            <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION" xmlns:tools="http://schemas.android.com/tools" tools:ignore="MockLocation" />
+            <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+        </config-file>
+        
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <meta-data android:name="android.security.mock_location" android:value="true" />
         </config-file>
     </platform>
 
     <plugin name="cordova-plugin-geolocation" spec="^5.0.0" />
-    <plugin name="@ccervantesb/cordova-plugin-mock-location" spec="^1.0.3" />
+    <plugin name="cordova-plugin-local-notification" spec="^0.9.0-beta.2" />
+    <plugin name="cordova-plugin-fake-location" spec="^1.0.0" />
 </widget>
