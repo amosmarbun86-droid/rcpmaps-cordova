@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.rcpdroid.maps" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="com.rcpdroid.maps" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>RcpMaps</name>
-    <description>RcpMaps Fake GPS Progressive Web App</description>
+    <description>RcpMaps Fake GPS App</description>
     <author email="dev@rcpdroid.com" href="https://github.com/rcpdroid">rcpdroid Amos</author>
     <content src="index.html" />
     <access origin="*" />
@@ -10,11 +10,11 @@
     
     <platform android="android">
         <preference name="AndroidXEnabled" value="true" />
-        <config-file target="AndroidManifest.xml" parent="/*">
+        
+        <config-file target="AndroidManifest.xml" parent="/manifest">
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION" />
         </config-file>
     </platform>
 </widget>
-          
