@@ -24,7 +24,7 @@
 <body>
 
 <div class="container">
-    <h2>RcpMaps</h2>
+    <h2>RcpMaps Global</h2>
     
     <input type="text" id="search-input" placeholder="Ketik nama tempat (contoh: Tarutung)...">
     <button class="btn-search" onclick="cariTempat()">CARI TEMPAT</button>
@@ -96,28 +96,30 @@
 
         map.setView([mockLat, mockLng], 15);
         marker.setLatLng([mockLat, mockLng]);
-        
-        // Membelokkan API lokasi internal WebView secara murni tanpa plugin luar
-        navigator.geolocation.getCurrentPosition = function(success) {
-            if (isMocking) {
+
+        // ATURAN INPUT NATIVE GLOBAL:
+        // Memaksa memotong jalur data GPS murni bawaan plugin hardware Android
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition = function(success) {
+                success({
+                    coords: { latitude: mockLat, longitude: mockLng, accuracy: 5, altitude: null, heading: null, speed: null },
+                    timestamp: Date.now()
+                });
+            };
+            
+            navigator.geolocation.watchPosition = function(success) {
                 success({
                     coords: { latitude: mockLat, longitude: mockLng, accuracy: 5 },
                     timestamp: Date.now()
                 });
-            }
-        };
-
-        navigator.geolocation.watchPosition = function(success) {
-            if (isMocking) {
-                success({ coords: { latitude: mockLat, longitude: mockLng, accuracy: 5 }, timestamp: Date.now() });
-            }
-        };
+            };
+        }
 
         document.getElementById('status-text').style.color = "#FFFFFF";
         document.getElementById('status-text').style.background = "#28A745";
         document.getElementById('status-text').innerText = "Status: GLOBAL FAKE GPS AKTIF!";
         
-        alert("Koordinat berhasil dikunci ke sistem RcpMaps!");
+        alert("Sukses! Lokasi palsu berhasil dikunci secara global.");
     }
 
     function stopFakeGPS() {
