@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.rcpdroid.maps" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.apache.org/apk/res/android">
+<widget id="com.rcpdroid.maps" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>RcpMaps</name>
     <description>RcpMaps Global Fake GPS Application</description>
     <author email="dev@rcpdroid.com" href="https://github.com/rcpmaps-cordova">rcpdroid Amos</author>
@@ -21,7 +21,4 @@
             <meta-data android:name="android.security.mock_location" android:value="true" />
         </config-file>
     </platform>
-
-    <plugin name="cordova-plugin-geolocation" spec="^5.0.0" />
-    <plugin name="cordova-plugin-dialogs" spec="^3.0.1" />
 </widget>
