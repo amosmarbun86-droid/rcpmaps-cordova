@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.rcpdroid.maps" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android">
+<widget id="com.rcpdroid.maps" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.apache.org/apk/res/android">
     <name>RcpMaps</name>
-    <description>RcpMaps Fake GPS App</description>
-    <author email="dev@rcpdroid.com" href="https://github.com/rcpdroid">rcpdroid Amos</author>
+    <description>RcpMaps Global Fake GPS Application</description>
+    <author email="dev@rcpdroid.com" href="https://github.com/rcpmaps-cordova">rcpdroid Amos</author>
     <content src="index.html" />
     <access origin="*" />
     <allow-intent href="http://*/*" />
@@ -14,7 +14,10 @@
         <config-file target="AndroidManifest.xml" parent="/manifest">
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-            <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION" />
+            <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION" xmlns:tools="http://schemas.android.com/tools" tools:ignore="MockLocation" />
         </config-file>
     </platform>
+
+    <plugin name="cordova-plugin-geolocation" spec="^5.0.0" />
+    <plugin name="@ccervantesb/cordova-plugin-mock-location" spec="^1.0.3" />
 </widget>
