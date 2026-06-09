@@ -48,24 +48,42 @@
     let mockLat = 0;
     let mockLng = 0;
 
-    // Inisialisasi Peta Leaflet awal (Default Jakarta)
+    // Inisialisasi Peta Awal
     function initMap() {
         map = L.map('map').setView([-6.2088, 106.8456], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         marker = L.marker([-6.2088, 106.8456]).addTo(map);
     }
     window.onload = initMap;
 
-    // Fungsi otomatis mendeteksi koordinat berdasarkan teks pencarian Amos
+    // Listener Cordova Siap Pakai
+    document.addEventListener("deviceready", padaDeviceReady, false);
+
+    function padaDeviceReady() {
+        mintaIzinNotifikasi();
+    }
+
+    // Eksekusi Pop-up Izin Notifikasi Murni Android saat aplikasi dibuka
+    function mintaIzinNotifikasi() {
+        if (window.cordova && cordova.plugins && cordova.plugins.notification) {
+            cordova.plugins.notification.local.hasPermission(function (granted) {
+                if (!granted) {
+                    cordova.plugins.notification.local.requestPermission(function (permGranted) {
+                        if (permGranted) {
+                            console.log("Izin Notifikasi Aktif");
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    // Fitur Pencarian Tempat Otomatis
     async function cariTempat() {
         const query = document.getElementById('search-input').value;
         if (!query) return alert('Ketik nama tempat terlebih dahulu, Amos!');
         
         document.getElementById('status-text').innerText = "Sedang mencari lokasi...";
-        document.getElementById('status-text').style.background = "#FFF3CD";
-        
         try {
             const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
             const data = await response.json();
@@ -82,71 +100,58 @@
                 document.getElementById('status-text').innerText = "Lokasi ditemukan! Siap diaktifkan.";
                 document.getElementById('status-text').style.background = "#D4EDDA";
             } else {
-                alert('Tempat tidak ditemukan, coba nama kota/jalan lain!');
-                document.getElementById('status-text').innerText = "Gagal menemukan lokasi.";
-                document.getElementById('status-text').style.background = "#F8D7DA";
+                alert('Tempat tidak ditemukan, coba nama lain!');
             }
         } catch (error) {
             console.error(error);
-            document.getElementById('status-text').innerText = "Error koneksi pencarian.";
+            document.getElementById('status-text').innerText = "Error koneksi.";
         }
     }
 
-    // Fungsi Utama: Mengunci dan Menyuntikkan GPS palsu ke sistem Android
+    // Fungsi Pengunci & Penyuntik Lokasi Palsu Tingkat Sistem HP
     function startFakeGPS() {
         const latInput = document.getElementById('latitude').value;
         const lngInput = document.getElementById('longitude').value;
         
-        if (!latInput || !lngInput) {
-            alert('Cari tempat dulu agar koordinat terisi otomatis!');
-            return;
-        }
+        if (!latInput || !lngInput) return alert('Cari tempat dulu!');
 
         mockLat = parseFloat(latInput);
         mockLng = parseFloat(lngInput);
 
-        // 1. Geser Pin Marker & Peta internal aplikasi
         map.setView([mockLat, mockLng], 15);
         marker.setLatLng([mockLat, mockLng]);
         
-        // 2. Tembus ke sistem Global Android via Native Bridge Plugin
-        if (window.cordova && cordova.plugins && cordova.plugins.mockLocation) {
-            let opts = {
-                provider: "gps",
-                latitude: mockLat,
-                longitude: mockLng
-            };
-            
-            cordova.plugins.mockLocation.setMockLocation(opts)
-            .then((location) => {
+        if (window.plugins && window.plugins.fakeLocation) {
+            // Eksekusi pemindahan koordinat global via plugin baru
+            window.plugins.fakeLocation.set(mockLat, mockLng, function() {
                 document.getElementById('status-text').style.color = "#FFFFFF";
                 document.getElementById('status-text').style.background = "#28A745";
                 document.getElementById('status-text').innerText = "Status: GLOBAL FAKE GPS AKTIF!";
+                
+                // Kirim notifikasi dorong ke bilah status HP
+                if (cordova.plugins.notification) {
+                    cordova.plugins.notification.local.schedule({
+                        title: 'RcpMaps Active',
+                        text: 'Lokasi berhasil dialihkan secara global!',
+                        foreground: true
+                    });
+                }
                 alert("Sukses! Lokasi seluruh HP berhasil dialihkan.");
-            })
-            .catch((error) => {
-                alert("Gagal menyuntik sistem. Pastikan RcpMaps sudah dipilih di menu Opsi Pengembang HP!");
-                console.error(error);
+            }, function(error) {
+                alert("Gagal menyuntik lokasi. Pastikan RcpMaps dipilih di Opsi Pengembang: " + error);
             });
         } else {
-            // Backup jika dicoba lewat Browser komputer
+            // Cadangan jika ditest di browser desktop biasa
             navigator.geolocation.getCurrentPosition = function(success) {
                 success({ coords: { latitude: mockLat, longitude: mockLng, accuracy: 10 }, timestamp: Date.now() });
             };
-            document.getElementById('status-text').innerText = "Status: Fake GPS Aktif (Hanya internal browser)";
-            alert("Aplikasi tidak mendeteksi Cordova. Berjalan dalam mode browser.");
+            alert("Mode browser terdeteksi.");
         }
     }
 
-    // Fungsi Mematikan GPS Palsu dan mengembalikan ke GPS asli HP
+    // Mematikan dan memuat ulang aplikasi ke posisi normal
     function stopFakeGPS() {
-        if (window.cordova && cordova.plugins && cordova.plugins.mockLocation) {
-            // Kita set koordinat kosong atau hapus mock provider
-            location.reload(); // Cara paling aman membersihkan cache mock pada Cordova
-        } else {
-            location.reload();
-        }
-        alert("Fake GPS dinonaktifkan. Mengembalikan koordinat ke GPS asli.");
+        location.reload();
     }
 </script>
 </body>
